@@ -1,14 +1,16 @@
 #include<stdio.h>
 #include<unistd.h>
 #define MAX 50
+
 int trap = 0;			//trap variable
 int cost_array[50],ca = 0;	//temp cost and its array
 int route[50],r = 0,tmp_row[50],tr = 0;	//temp route and its variable
 int tcost = 0,prevcost = 0;			//temporary cost
 int conn[50][50],cost[50][50]; //connections and cost matrix
+int trconn[50][50],trcost[50][50]; //connections and cost matrix
 int n = 8;	//maximum num of nodes
 int np = 0;	//num of paths
-int d = 6,r;
+int d = 6,s = 1,r,dt =6;
 int opt_path = 0;
 int tmp_cost[10],tc = 0;
 int run_node = 0;
@@ -16,7 +18,9 @@ int hcost[50];
 int jump_cost,jump_from_node,ret_node,tmp;
 int visited[50],vs;
 int hf[10],h = 0;
-int fl,node;
+int gvisited[50],gvs;
+int gf[10],g = 0;
+int fl,node,t1,t2;
 int tmp_array[50],ta = 0;
 
 
@@ -91,12 +95,31 @@ int if_node_visited(int q){
 	}
 	return 0;
 }
+int if_node_gvisited(int q){
+	int i;
+	for(i = 0;i<gvs;i++){
+		if(q == gvisited[i]){
+			return 1;
+		}
+	}
+	return 0;
+}
 
 void print_tmp_cost(){
+	printf("printing tmp_cost\n");
 	int i;
 	printf("\n");
 	for(i = 0; i<tc ;i++ ){
 		printf("%d\t",tmp_cost[i]);
+	}
+	printf("\n");
+}
+
+void print_visited(){
+	int i;
+	printf("\n");
+	for(i = 0; i<vs ;i++ ){
+		printf("h[%d] = %d\n",visited[i],hf[visited[i]]);
 	}
 	printf("\n");
 }
@@ -106,7 +129,7 @@ int heuristic_func(int node,int start){
 	for(j = start; j<n ;j++){
 		if(conn[i][j] == 1){
 			cost_array[ca++] = cost[i][j];
-			tcost = tcost + cost[i][j];
+			tcost = tcost + cost[i][j];	
 			if(j == d){
 				tmp_cost[tc++] = tcost; 
 				prevcost = cost_array[ca-1]+cost_array[ca-2];
@@ -114,7 +137,6 @@ int heuristic_func(int node,int start){
 				tmp = prevcost;
 				ret_node = node;
 				fl = find_low_tmp_cost(tmp_cost,0,tc-1);
-				//for node 2 its returning 3 from here
 				return fl;
 			}else{
 				int cond = 0;
@@ -124,6 +146,7 @@ int heuristic_func(int node,int start){
 					hf[j] = heuristic_func(j,0);
 					visited[vs++] = j;
 				}else{
+					fl = tcost;
 					tmp_cost[tc++] = tcost + hf[j];
 					tcost = 0;
 					if(i != node){
@@ -146,53 +169,9 @@ int heuristic_func(int node,int start){
 			}
 		}
 	}
+	return fl;
 }
-void print_visited(){
-	int i;
-	printf("\n");
-	for(i = 0; i<vs ;i++ ){
-		printf("h[%d] = %d\n",visited[i],hf[visited[i]]);
-	}
-	printf("\n");
-}
-int find_low_path(int *hc,int i,int j){
-	int rmin,lmin;
-	int m = (i+j)/2;
-	if(i == j){
-		return i;
-	}
-	rmin = find_low_path(hc,i,m);
-	lmin = find_low_path(hc,m+1,j);
-	if(hf[hc[i]] < hc[hc[j]]){
-		return rmin;
-	}else{
-		return lmin;
-	}
-}
-
-void bstFS(int row,int start){
-	int i = row,j;
-	int ret;
-	for(j = start;j<n;j++){
-		if(conn[i][j] == 1){
-			tmp_array[ta++] = j;
-		}else{
-
-		}
-	}
-	ret = find_low_path(tmp_array,0,ta);
-	route[r++] = ret;
-	if(ret == d){
-		initialize(p,np);
-		copy_path_to_struct(p,np,route,tcost);
-		p[np].cost = cal_cost(p,0);
-		np++;
-		return;
-	}else{
-		bstFS(ret,1);
-	}
-}
-void prepare_and_search(int row,int start){
+void prepare_heuristic_func(int row,int start){
 	int i = row,j;
 	for(j=start ; j<n ; j++){
 		if(conn[i][j] == 0){
@@ -202,17 +181,18 @@ void prepare_and_search(int row,int start){
 				int cond;
 				cond = if_node_visited(j);
 				if(cond == 0){
-					hf[j] = 0;	
+					hf[j] = 0;
 					visited[vs++] = j;
 				}
 				return;
 			}else{
 				int cond;
-				prepare_and_search(j,1);
+				prepare_heuristic_func(j,1);
 				node = j; 
 				cond = if_node_visited(j);
 				if(cond == 0){
-					heuristic_func(j,0);
+					int t;
+					t = heuristic_func(j,1);
 					hf[j] = fl;
 					visited[vs++] = j;
 				}
@@ -226,73 +206,143 @@ void prepare_and_search(int row,int start){
 		}
 	}
 	if(i == 1){
-		hf[2] = 3;
-		int e = 0,d = 0;
-		print_visited();
-		bstFS(1,1);
 		return;
+	}
+}
+int find_low_path(int *hc,int i,int j){
+	int rmin,lmin;
+	int m = (i+j)/2;
+	if(i == j){
+		return i;
+	}
+	rmin = find_low_path(hc,i,m);
+	lmin = find_low_path(hc,m+1,j);
+	if(hf[hc[rmin]] < hc[hc[lmin]]){
+		return rmin;
+	}else{
+		return lmin;
+	}
+}
+
+void bestFirstSearch(int row,int start){
+	int i = row,j,m;
+	int ret;
+	for(j = start;j<n;j++){
+		if(conn[i][j] == 1){
+			tmp_array[ta++] = j;
+		}else{
+
+		}
+	}
+	ret = find_low_path(tmp_array,0,ta-1);
+	route[r++] = tmp_array[ret];
+	if(tmp_array[ret] == d){
+		initialize(p,np);
+		copy_path_to_struct(p,np,route,tcost);
+		p[np].cost = cal_cost(p,0);
+		np++;
+		return;
+	}else{
+		bestFirstSearch(tmp_array[ret],1);
 	}
 }
 
 void main(){
 	int i,j;
-	for(i = 1;i < n; i++ ){
-		for(j = 1;j < n; j++ ){
-			if(i == 1 && j == 2){
+	for(i = 0;i < n; i++ ){
+		for(j = 0;j < n; j++ ){
+			if(i == 0 && j == 1){
+				conn[i][j] = 1;		
+				cost[i][j] = 0;
+			}else if(i == 0 && j == 6){
+				trconn[i][j] = 1;		
+				trcost[i][j] = 0;
+			}else if(i == 1 && j == 2){
 				conn[i][j] = 1;		
 				cost[i][j] = 9;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 9;
 			}else if(i == 1 && j == 3){
 				conn[i][j] = 1;
-				cost[i][j] = 5;	
+				cost[i][j] = 5;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 5;	
 			}else if(i == 2 && j == 4){
 				conn[i][j] = 1;
-				cost[i][j] = 2;	
+				cost[i][j] = 2;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 2;	
 			}else if(i == 2 && j == 5){
 				conn[i][j] = 1;
-				cost[i][j] = 1;	
+				cost[i][j] = 1;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 1;	
 			}else if(i == 2 && j == 7){
 				conn[i][j] = 1;
-				cost[i][j] = 3;	
+				cost[i][j] = 3;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 3;	
 			}else if(i == 3 && j == 5){
 				conn[i][j] = 1;	
 				cost[i][j] = 6;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 6;
 			}else if(i == 3 && j == 6){
 				conn[i][j] = 1;	
 				cost[i][j] = 6;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 6;
 			}else if(i == 4 && j == 5){
 				conn[i][j] = 1;	
 				cost[i][j] = 2;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 2;
 			}else if(i == 4 && j == 6){
 				conn[i][j] = 1;	
 				cost[i][j] = 3;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 3;
 			}else if(i == 5 && j == 6){
 				conn[i][j] = 1;	
 				cost[i][j] = 2;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 2;
 			}else if(i == 7 && j == 6){
 				conn[i][j] = 1;	
 				cost[i][j] = 2;
+				trconn[j][i] = 1;		
+				trcost[j][i] = 2;
 			}else{
 				conn[i][j] = 0;
 				cost[i][j] = 0;
+				trconn[j][i] = 0;		
+				trcost[j][i] = 0;
 			}
 		}	
 	}
-	for(i = 1;i < n; i++ ){
-		for(j = 1;j < n; j++ ){
+	trconn[0][6] = 1;
+	printf("trconn[%d][%d] = %d\n",0,6,trconn[0][6]);
+	for(i = 0;i < n; i++ ){
+		for(j = 0;j < n; j++ ){
 			printf("%d  ",conn[i][j]);
 		}	
 		printf("\n");
 	}
 	printf("\n");
-	for(i = 1;i < n; i++ ){
-		for(j = 1;j < n; j++ ){
+	for(i = 0;i < n; i++ ){
+		for(j = 0;j < n; j++ ){
 			printf("%d  ",cost[i][j]);
 		}	
 		printf("\n");
 	}
+	printf("\n");
 	route[0] = 1;
 	r++;	
-	prepare_and_search(1,1);
+	prepare_heuristic_func(0,0);
+	bestFirstSearch(1,1);
+	print_visited();
+	printf("Optimum Path : ");
 	printpath(p,0);
 	printcost(p,0);
+	printf("\n\n");
 }
