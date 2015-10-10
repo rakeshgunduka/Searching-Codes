@@ -23,7 +23,6 @@ int gf[10],g = 0;
 int fl,node,t1,t2;
 int tmp_array[50],ta = 0;
 
-
 struct paths{
 	int d[MAX];
 	int top;
