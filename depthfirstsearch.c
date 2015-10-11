@@ -17,7 +17,6 @@ struct paths{
 	int cost;
 }p[MAX];
 
-
 void push(struct paths *p,int d,int pindex){
 	if(p[pindex].top == MAX-1){
 		printf("paths OverFlow");
