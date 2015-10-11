@@ -9,4 +9,4 @@ Repository includes  :
       1. Best First Searching algorithm.  
       2. Depth First Searching algorithm.  
       3. A* Searching algorithm.  
-      
+      4. Uniform Cost Searching algorithm.      
