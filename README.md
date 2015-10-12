@@ -6,7 +6,8 @@ Majorly Dymanic recursive approach is used for the implementation of the searchi
 
 Repository includes  :
 
-      1. Best First Searching algorithm.  
-      2. Depth First Searching algorithm.  
-      3. A* Searching algorithm.  
-      4. Uniform Cost Searching algorithm.      
+      1. Best First Searching algorithm.
+      2. Breadth First Searching algorithm
+      3. Depth First Searching algorithm.  
+      4. A* Searching algorithm.  
+      5. Uniform Cost Searching algorithm.      
